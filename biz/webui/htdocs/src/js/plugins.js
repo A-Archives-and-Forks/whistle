@@ -16,6 +16,7 @@ var iframes = require('./iframes');
 
 var CMD_RE = /^([\w]{1,12})(\s+-g)?$/;
 var WHISTLE_PLUGIN_RE = /(?:^|[\s,;|])(?:@[\w-]+\/)?whistle\.[a-z\d_-]+(?:\@[\w.^~*-]*)?(?:$|[\s,;|])/;
+var SPACE_RE = /\s+$/;
 var pendingEnable;
 var registryCache;
 
@@ -140,7 +141,7 @@ var Home = React.createClass({
     events.on('installPlugins', self.showInstall);
     events.on('updateAllPlugins', function (_, byInstall) {
       byInstall = byInstall === 'reinstallAllPlugins';
-      if (byInstall && (dataCenter.enableAllPlugins || (self.installUrls && self.installUrls.length))) {
+      if (byInstall && (dataCenter.enablePluginMgr || (self.installUrls && self.installUrls.length))) {
         return self.showInstall();
       }
       var data = self.props.data || {};
@@ -406,6 +407,8 @@ var Home = React.createClass({
       state.registryChanged = false;
       var regCmd = registry ? ' --registry=' + registry + '  ' : '';
       if (cmdMsg) {
+        var r = SPACE_RE.exec(cmdMsg);
+        var spaces = r && r[0];
         cmdMsg = cmdMsg.split('\n').map(function(line) {
           line = line.trim();
           line = line.split(/\s+/).filter(function(cmd) {
@@ -416,10 +419,12 @@ var Home = React.createClass({
           }
           return line;
         }).filter(util.noop).join('\n');
+        if (spaces && !registry) {
+          cmdMsg += spaces;
+        }
       } else {
-        cmdMsg = getCmd() + getArgvs(dataCenter.account, dataCenter.whistleName) + ' ' + (regCmd ?  regCmd : '');
+        cmdMsg = getCmd() + getArgvs(dataCenter.account, dataCenter.whistleName) + ' ' + (regCmd ? regCmd : '');
       }
-
       state.cmdMsg = cmdMsg;
       state.installMsg = cmdMsg;
     }
